@@ -78,8 +78,6 @@ legend(
   bty = "n"
 )
 
-wavelet.plot()
-
 
 
 ### Stochastic Model
