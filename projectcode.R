@@ -79,7 +79,6 @@ legend(
 )
 
 
-
 ### Stochastic Model
 SIR.Gillespie <- function(parms, ic, tmax= 50, dtsave = 1/52, yearstep = 1) {
   start.time <- proc.time()
@@ -188,41 +187,7 @@ SIR.Gillespie <- function(parms, ic, tmax= 50, dtsave = 1/52, yearstep = 1) {
   return(df)
 }
 
-#blue<- replicate(50,SIR.Gillespie())
-#blue
-#plot(blue)
-# result <- SIR.Gillespie(parms=parms, ic = ic)
-# result
-
-
-# soln <- ode(y = ic, times = seq(0,max(result$time),length=1000), 
-#             func = SIR.vector.field, parms = parms)
-# 
-# par(fig=c(0,1,0,1))
-# 
-# plot(x = soln[, "time"], 
-#      y = soln[, "I"],
-#      type = "l",
-#      col = "red", 
-#      lwd = 2, 
-#      xlab = "Time (years)", 
-#      ylab = "Infectious I(t)", 
-#      main = "Measles SIR model",
-#      ylim = range(c(soln[, "I"], result$I)))
-# 
-# lines(x=result$time,y=(result$I),
-#       xlab='Time(years)',
-#       ylab='Infectious I(t)',
-#       type = "l",
-#       pch = 1,
-#       col = "black",
-#       lwd = 2, new = FALSE)
-
-
-# abline(h = Ieqm, lty = "dotted", col = "grey")
-
-
-# Function to plot stochastic simulations with black dots
+# Function to plot stochastic simulations and the periodogram
 plot_multiple_gillespie_lines <- function(parms, ic, tmax = 50, nsim = 5) {
   start.time <- proc.time()
   
@@ -242,94 +207,38 @@ plot_multiple_gillespie_lines <- function(parms, ic, tmax = 50, nsim = 5) {
   # Plot each simulation with its unique color
   for (i in 1:nsim) {
     lines(result_list[[i]]$time, result_list[[i]]$I, col = colors[i], lwd = 1.5)
+    print(paste("Simulation", i, "complete."))
   }
   
-  # plot deterministic model
+  # plot deterministic model (if available)
   lines(x = soln[, "time"], y = soln[, "I"], col = "black", lwd = 2)
   
   # Add legend
   legend("topright", legend = paste("Simulation", 1:nsim), 
          col = colors, lty = 1, bty = "n", cex = 0.7, lwd = 1.5)
   
+  # Now, calculate and plot the periodogram for one of the simulations (e.g., the first one)
+  v <- result_list[[1]]$I  # Use the 'I' time series from the first simulation
+  
+  # Calculate the periodogram using the 'spectrum' function
+  s <- spectrum(v, plot = FALSE)
+  
+  # Adjust the frequency to be in terms of years (optional)
+  adjusted_freq <- s$freq * 52  # if data is weekly, convert to yearly frequencies
+  
+  # Create the periodogram plot
+  plot(1 / adjusted_freq, s$spec, type = "l", col = "blue", xlim= c(0,5),
+       xlab = "Years", ylab = "Periodogram", main = "Periodogram of Infectious Population")
+  
   end.time <- proc.time() - start.time
   message("run time: ")
   print(end.time)
 }
 
-# Run and plot
+# Run the function to plot the stochastic simulations and periodogram
 plot_multiple_gillespie_lines(parms = parms, ic = ic)
-abline(h = Ieqm, lty = "dotted", col = "grey")
 
 
 
 
 
-
-
-
-
-# library(adaptivetau)
-# # Transitions: each row corresponds to an event
-# transitions <- list(
-#   c(S = -1, I = +1), # Infection: S -> I
-#   c(I = -1, R = +1), # Recovery: I -> R
-#   c(S = +1),         # Birth: new susceptible
-#   c(S = -1),         # Death of susceptible
-#   c(I = -1),         # Death of infected
-#   c(R = -1)          # Death of recovered
-# )
-# 
-# rate_function <- function(state, parms, t) {
-#   with(as.list(c(state, parms)), {
-#     # Seasonal forcing for transmission rate
-#     beta_t <- beta * (1 + 0.1 * cos(2 * pi * t))
-#     
-#     rates <- c(
-#       beta_t * S * I / N, # Infection
-#       gamma * I,          # Recovery
-#       mu * N,             # Birth
-#       mu * S,             # Death of susceptible
-#       mu * I,             # Death of infected
-#       mu * R              # Death of recovered
-#     )
-#     return(rates)
-#   })
-# }
-# # Time limits
-# tmax <- 50  # Maximum time in years
-# 
-# # Run simulation
-# result <- ssa.adaptivetau(
-#   init.values = ic,
-#   transitions = transitions,
-#   rateFunc = rate_function,
-#   params = parms,
-#   tf = tmax
-# )
-# # Convert result to data frame for plotting
-# result_df <- as.data.frame(result)
-# colnames(result_df) <- c("time", "S", "I", "R")
-# 
-# 
-# # Plot 
-# plot(
-#   x = soln[, "time"], 
-#   y = soln[, "I"], 
-#   log = "y", # easier to see what's going on
-#   type = "l", 
-#   col = "red", 
-#   lwd = 2, 
-#   xlab = "Time (years)", 
-#   ylab = "Infectious I(t)", 
-#   main = "Measles SIR model"
-# )
-# 
-# # Plot infectious individuals over time
-# points(
-#   result_df$time, result_df$I,
-#   type = "l", col = "black", lwd = 1,
-#   xlab = "Time (years)", ylab = "Infectious I(t)",
-#   main = "SIR Model Simulation with Adaptive Tau"
-# )
-# 
-# 
