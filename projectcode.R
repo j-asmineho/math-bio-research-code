@@ -242,7 +242,6 @@ plot_multiple_gillespie_lines <- function(parms, ic, tmax = 50, nsim = 5) {
   # Plot each simulation with its unique color
   for (i in 1:nsim) {
     lines(result_list[[i]]$time, result_list[[i]]$I, col = colors[i], lwd = 1.5)
-    print(paste("Simulation", i, "complete."))
   }
   
   # plot deterministic model
