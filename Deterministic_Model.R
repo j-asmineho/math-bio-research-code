@@ -42,9 +42,9 @@ SIR.vector.field <- function(t, vars, parms) {
     beta_t <- beta * (1 + alpha * cos(2 * pi * t))
     
     # Differential equations
-    dS <- mu * N - beta_t * S * I / N - mu * S - p * S
+    dS <- mu * N - beta_t * S * I / N - mu * S + (1-p) * mu
     dI <- beta_t * S * I / N - gamma * I - mu * I + constantinf
-    dR <- gamma * I - mu * R + p * S - constantinf
+    dR <- gamma * I - mu * R + p * mu - constantinf
     
     list(c(dS, dI, dR))  # Return derivatives
   })
@@ -78,203 +78,69 @@ periodogram_d <- function(df, # data frame: date and (weekly) cases
 
 par(mfrow = c(5, 2), mar = c(4, 4, 2, 1))
 
-# Plot 
-plot(
-  x = soln[, "time"], 
-  y = soln[, "I"], 
-  log = "y", # easier to see what's going on
-  type = "l", 
-  col = "black", 
-  lwd = 2, 
-  xlab = "Time (years)", 
-  ylab = "Infectious I(t)", 
-  main = "Measles SIR model"
-)
-
-## add equilibrium level to see what's going on:
-abline( h = Ieqm, lty = "dotted",lwd='2' , col = "grey")
-
-legend(
-  "topright", 
-  legend = c("Infected (I)"), 
-  col = c("black"), 
-  lty = 1, 
-  lwd = 2, 
-  bty = "n"
-)
-
-periodogram_d(soln,trange=c(0,50),color='black')
-
 
 ##################################################################
+# Define a sequence of p values to iterate over
+p_values <- c(0.1, 0.2, 0.4, 0.6, 0.7)
 
-p <- 0.1
-constantinf<-500
-parms <- c(
-  beta = beta,
-  gamma = gamma,
-  mu = mu,
-  alpha = alpha,
-  N = N,
-  p = p,
-  constantinf=constantinf
-)
-soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
+# Define colors for each p value
+colors <- rainbow(length(p_values))
 
-# Plot 
-plot(
-  x = soln[, "time"], 
-  y = soln[, "I"], 
-  log = "y", # easier to see what's going on
-  type = "l", 
-  col = "hotpink", 
-  lwd = 2, 
-  xlab = "Time (years)", 
-  ylab = "Infectious I(t)", 
-  main = paste("Measles SIR model with p = ",p)
-)
+# Set up the plotting layout for side-by-side plots
+par(mfrow = c(length(p_values), 2), mar = c(4, 4, 2, 1))  # Rows = number of p values, 2 columns
 
-## add equilibrium level to see what's going on:
-abline( h = Ieqm, lty = "dotted",lwd='2' , col = "grey")
-
-legend(
-  "topright", 
-  legend = c("Infected (I)"), 
-  col = c("hotpink"), 
-  lty = 1, 
-  lwd = 2, 
-  bty = "n"
-)
-
-periodogram_d(soln,trange=c(0,50),color='hotpink')
-title(main=paste('Periodogram with p = ',p))
-
-
-##################################################################
-p <- 0.2
-parms <- c(
-  beta = beta,
-  gamma = gamma,
-  mu = mu,
-  alpha = alpha,
-  N = N,
-  p = p,
-  constantinf=constantinf
-)
-soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
-
-# Plot 
-plot(
-  x = soln[, "time"], 
-  y = soln[, "I"], 
-  log = "y", # easier to see what's going on
-  type = "l", 
-  col = "dodgerblue", 
-  lwd = 2, 
-  xlab = "Time (years)", 
-  ylab = "Infectious I(t)", 
-  main = paste("Measles SIR model with p = ",p)
-)
-
-## add equilibrium level to see what's going on:
-abline( h = Ieqm, lty = "dotted",lwd='2' , col = "grey")
-
-legend(
-  "topright", 
-  legend = c("Infected (I)"), 
-  col = c("dodgerblue"), 
-  lty = 1, 
-  lwd = 2, 
-  bty = "n"
-)
-
-periodogram_d(soln,trange=c(0,50),color='dodgerblue')
-title(main=paste('Periodogram with p = ',p))
-
-
-##################################################################
-
-p <- 0.6
-parms <- c(
-  beta = beta,
-  gamma = gamma,
-  mu = mu,
-  alpha = alpha,
-  N = N,
-  p = p,
-  constantinf=constantinf
-)
-soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
-
-# Plot 
-plot(
-  x = soln[, "time"], 
-  y = soln[, "I"], 
-  log = "y", # easier to see what's going on
-  type = "l", 
-  col = "seagreen2", 
-  lwd = 2, 
-  xlab = "Time (years)", 
-  ylab = "Infectious I(t)", 
-  main = paste("Measles SIR model with p = ",p)
-)
-
-## add equilibrium level to see what's going on:
-abline( h = Ieqm, lty = "dotted",lwd='2' , col = "grey")
-
-legend(
-  "topright", 
-  legend = c("Infected (I)"), 
-  col = c("seagreen2"), 
-  lty = 1, 
-  lwd = 2, 
-  bty = "n"
-)
-
-periodogram_d(soln,trange=c(0,50),color='seagreen2')
-title(main=paste('Periodogram with p = ',p))
-
-
-
-#################################
-p <- 0.4
-parms <- c(
-  beta = beta,
-  gamma = gamma,
-  mu = mu,
-  alpha = alpha,
-  N = N,
-  p = p,
-  constantinf=constantinf
-)
-soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
-
-# Plot 
-plot(
-  x = soln[, "time"], 
-  y = soln[, "I"], 
-  log = "y", # easier to see what's going on
-  type = "l", 
-  col = "purple3", 
-  lwd = 2, 
-  xlab = "Time (years)", 
-  ylab = "Infectious I(t)", 
-  main = paste("Measles SIR model with p = ",p)
-)
-
-## add equilibrium level to see what's going on:
-abline( h = Ieqm, lty = "dotted",lwd='2' , col = "grey")
-
-legend(
-  "topright", 
-  legend = c("Infected (I)"), 
-  col = c("purple3"), 
-  lty = 1, 
-  lwd = 2, 
-  bty = "n"
-)
-
-
-periodogram_d(soln,trange=c(0,50),color='purple3')
-title(main=paste('Periodogram with p = ',p))
-
+# Loop over each value of p with an index to access the corresponding color
+for (i in seq_along(p_values)) {
+  p <- p_values[i]
+  
+  # Update parameters
+  parms <- c(
+    beta = beta,
+    gamma = gamma,
+    mu = mu,
+    alpha = alpha,
+    N = N,
+    p = p,
+    constantinf = constantinf
+  )
+  
+  # Solve the ODE system
+  soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
+  
+  # Plot the infectious population I(t)
+  plot(
+    x = soln[, "time"],
+    y = soln[, "I"],
+    log = "y", # log scale to better visualize dynamics
+    type = "l",
+    col = colors[i],  # Use the corresponding color
+    lwd = 2,
+    xlab = "Time (years)",
+    ylab = "Infectious I(t)",
+    main = paste("Measles SIR model with p =", p)
+  )
+  
+  # Add equilibrium line
+  abline(h = Ieqm, lty = "dotted", lwd = 2, col = "grey")
+  
+  # Add legend
+  legend(
+    "topright",
+    legend = paste("p =", p),
+    col = colors[i],
+    lty = 1,
+    lwd = 2,
+    bty = "n"
+  )
+  
+  # Generate the periodogram next to the model plot
+  periodogram_d(
+    soln,
+    trange = c(0, 50),
+    color = colors[i],
+    xlim = c(0, 10) # Adjust x-axis limits if needed
+  )
+  
+  # Add title to the periodogram
+  title(main = paste("Periodogram with p =", p))
+}
