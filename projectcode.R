@@ -264,7 +264,10 @@ plot_multiple_gillespie_lines(parms = parms, ic = ic, tmax = tmax, nsim = nsim)
 ### Stochastic Model with vaccinated proportions
 # Takes approximately 1.5 minutes to run one simulation with N = 500,000 and tmax = 50
 
-SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1) {
+# set v = vaccination proportion
+v <- 0.6
+
+SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, v) {
   start.time <- proc.time()
   t <- 0 # start at time 0
   tvec <- c(t) # vector of event times
@@ -277,10 +280,12 @@ SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1) {
   # Sstar <- Si
   # Istar <- Ii
   
+  vaccinated <- ic['S'] * v
+  
   # Begin closer to eqm points
-  S <- ic['S']
+  S <- ic['S'] - vaccinated
   I <- ic['I']
-  R <- ic['R']
+  R <- ic['R'] + vaccinated
   message("Initial state: S I R")
   print(data.frame(S=S,I=I,R=R))
   
