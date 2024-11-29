@@ -3,15 +3,14 @@
 library(deSolve)
 
 # Parameters
-N <- 500000
+N <- 5000000
 mu <- 1 / 50                       # Birth/death rate (annual)
 
 gamma <- 365 / 13                  # Recovery rate (13-day infectious period)
 R0 <- 17                      # Basic reproduction number
 beta <- R0 * (gamma + mu)    # Transmission rate
 alpha <- 0.1                        # Seasonal forcing amplitude
-p <- 0
-constantinf<-0
+p <- NA
 
 # Combine into a parameter vector
 parms <- c(
@@ -20,8 +19,7 @@ parms <- c(
   mu = mu,
   alpha = alpha,
   N = N,
-  p = p,
-  constantinf=constantinf
+  p = p
 )
 
 
@@ -38,21 +36,23 @@ ic <- c(S = Si, I = Ii, R = Ri)  # Initial condition vector
 # SIR model with seasonal forcing and vital dynamics
 SIR.vector.field <- function(t, vars, parms) {
   with(as.list(c(parms, vars)), {
-    # Seasonal forcing (alpha = 0 for no seasonality)
+    # Seasonal forcing for transmission rate
     beta_t <- beta * (1 + alpha * cos(2 * pi * t))
     
     # Differential equations
-    dS <- mu * N - beta_t * S * I / N - mu * S + (1-p) * mu
-    dI <- beta_t * S * I / N - gamma * I - mu * I + constantinf
-    dR <- gamma * I - mu * R + p * mu - constantinf
+    dS <- mu * (1 - p) * N - beta_t * S * I / N - mu * S
+    dI <- beta_t * S * I / N - gamma * I - mu * I 
+    dR <- gamma * I + mu * p * N - mu * R
     
-    list(c(dS, dI, dR))  # Return derivatives
+    # Return the derivatives
+    list(c(dS, dI, dR))
   })
 }
 
 
+
 # Initial conditions and time sequence
-times <- seq(0, 50, by = 0.01)  
+times <- seq(0, 50, by = 1/52)  
 soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
 
 
@@ -66,7 +66,8 @@ periodogram_d <- function(df, # data frame: date and (weekly) cases
   }
   with(df,{
     s <- spectrum(I, plot=FALSE)
-    s$per <- 1/(52*s$freq) # period in years (assume data are weekly)
+    adjusted_freq <- 52*s$freq
+    s$per <- 1/adjusted_freq # period in years (assume data are weekly)
     if (!add) { # start a new plot without plotting data
       plot(s$per,s$spec,typ="n",bty="L",ann=FALSE,las=1,
            xaxs="i",yaxs="i", xlim=xlim, col=color,...)
@@ -81,7 +82,7 @@ par(mfrow = c(5, 2), mar = c(4, 4, 2, 1))
 
 ##################################################################
 # Define a sequence of p values to iterate over
-p_values <- c(0.1, 0.2, 0.4, 0.6, 0.7)
+p_values <- c(0, 0.1, 0.4, 0.6, 0.7)
 
 # Define colors for each p value
 colors <- rainbow(length(p_values))
@@ -100,8 +101,7 @@ for (i in seq_along(p_values)) {
     mu = mu,
     alpha = alpha,
     N = N,
-    p = p,
-    constantinf = constantinf
+    p = p
   )
   
   # Solve the ODE system
