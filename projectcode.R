@@ -280,12 +280,12 @@ SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, p) {
   # Sstar <- Si
   # Istar <- Ii
   
-  # vaccinated <- ic['S'] * v
+  vaccinated <- ic['S'] * p
   
   # Begin closer to eqm points
-  S <- ic['S'] 
+  S <- ic['S'] - vaccinated
   I <- ic['I']
-  R <- ic['R'] 
+  R <- ic['R'] + vaccinated
   message("Initial state: S I R")
   print(data.frame(S=S,I=I,R=R))
   
