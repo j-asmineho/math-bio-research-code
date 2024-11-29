@@ -265,9 +265,9 @@ plot_multiple_gillespie_lines(parms = parms, ic = ic, tmax = tmax, nsim = nsim)
 # Takes approximately 1.5 minutes to run one simulation with N = 500,000 and tmax = 50
 
 # set v = vaccination proportion
-v <- 0.6
+p <- 0.1
 
-SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, v) {
+SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, p) {
   start.time <- proc.time()
   t <- 0 # start at time 0
   tvec <- c(t) # vector of event times
@@ -313,10 +313,11 @@ SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, v) {
     deathrateS <- mu * S                  # Death rate for susceptibles
     deathrateI <- mu * I                  # Death rate for infected
     deathrateR <- mu * R                  # Death rate for recovered
+    newbornvaccinatedrate <- mu * p       # Rate of vaccinated newborns
     newinfected <- 0   # Add new infected to add noise
     
     # Total event rate possible
-    a0 <- infectionrate + recoveryrate + birthrate + deathrateS + deathrateI + deathrateR + newinfected
+    a0 <- infectionrate + recoveryrate + birthrate + deathrateS + deathrateI + deathrateR + newinfected + newbornvaccinatedrate
     
     ## compute time to next event
     dt <- (1/a0)*log(1/runif(1))
@@ -342,9 +343,12 @@ SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, v) {
       R <- R + 1
     } else if (r < infectionrate + recoveryrate + birthrate + deathrateS + deathrateI + deathrateR) {
       R <- R # no change
-    } else {
+    } else if (r < infectionrate + recoveryrate + birthrate + deathrateS + deathrateI + deathrateR + newinfected){
       I <- I + newinfected
       R <- R - newinfected
+    } else {
+      S <- S + 1
+      R <- R + 1
     }
     
     if (t >= tsave){
@@ -386,7 +390,7 @@ plot_multiple_gillespie_lines <- function(parms, ic, tmax, nsim) {
   
   # Run multiple simulations and print simulation complete to track progress
   result_list <- lapply(1:nsim, function(x) {
-    res <- SIR.Gillespie(parms = parms, ic = ic, tmax = tmax)
+    res <- SIR.Gillespie(parms = parms, ic = ic, tmax = tmax, p = p)
     message(sprintf("Simulation %d completed", x))
     return(res)
   })
