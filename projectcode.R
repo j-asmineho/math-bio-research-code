@@ -1,4 +1,4 @@
-# Total time to run: 9 minutes
+# Total time to run: 19 minutes
 
 
 ### Deterministic Model
@@ -21,6 +21,13 @@ parms <- c(
   alpha = alpha,
   N = N
 )
+
+# Number of simulations for Gillespie simulation
+nsim <- 5
+tmax <- 50
+
+# set v = vaccination proportion for gillespie simulation at the bottom
+p <- 0.6
 
 
 ## equilibrium:
@@ -77,10 +84,6 @@ legend(
   lwd = 2, 
   bty = "n"
 )
-
-# Number of simulations for Gillespie simulation
-nsim <- 5
-tmax <- 50
 
 ### Stochastic Model
 # Takes approximately 1.5 minutes to run one simulation with N = 500,000 and tmax = 50
@@ -264,9 +267,6 @@ plot_multiple_gillespie_lines(parms = parms, ic = ic, tmax = tmax, nsim = nsim)
 ### Stochastic Model with vaccinated proportions
 # Takes approximately 1.5 minutes to run one simulation with N = 500,000 and tmax = 50
 
-# set v = vaccination proportion
-p <- 0.1
-
 SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, p) {
   start.time <- proc.time()
   t <- 0 # start at time 0
@@ -280,12 +280,12 @@ SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, p) {
   # Sstar <- Si
   # Istar <- Ii
   
-  vaccinated <- ic['S'] * v
+  # vaccinated <- ic['S'] * v
   
   # Begin closer to eqm points
-  S <- ic['S'] - vaccinated
+  S <- ic['S'] 
   I <- ic['I']
-  R <- ic['R'] + vaccinated
+  R <- ic['R'] 
   message("Initial state: S I R")
   print(data.frame(S=S,I=I,R=R))
   
@@ -383,7 +383,7 @@ SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1, p) {
 }
 
 ### Function to plot stochastic simulations and the periodogram
-# Takes approximately 7 minutes to run with N = 500,000 and tmax = 50
+# Takes approximately 10 minutes to run with N = 500,000 and tmax = 50
 
 plot_multiple_gillespie_lines <- function(parms, ic, tmax, nsim) {
   start.time <- proc.time()
