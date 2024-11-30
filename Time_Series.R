@@ -1,3 +1,6 @@
+# Code takes less than 1 second to run
+start.time <- proc.time()
+
 # Reading the csv file with NYC Measles Data
 read.ymdc <- function(file) {
   # Read the CSV file
@@ -117,3 +120,7 @@ periodogram(nyc,trange=times[[3]],xlim=c(0,8),color=colors[[3]])
 title(main = "Periodogram 1964-1980", xlab = "Years", 
       ylab = "Power Spectrum")
 mtext('(d)',side=3,line=2,adj=0)
+
+end.time <- proc.time() - start.time
+
+print(end.time)
