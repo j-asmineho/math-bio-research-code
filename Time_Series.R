@@ -1,3 +1,4 @@
+# Reading the csv file with NYC Measles Data
 read.ymdc <- function(file) {
   # Read the CSV file
   data <- read.csv(file, header = TRUE)
@@ -8,20 +9,20 @@ read.ymdc <- function(file) {
 }
 
 
-nyc <- read.ymdc("NYCWeeklyMeasles.csv")
+nyc <- read.ymdc("NYCWeeklyMeasles.csv") # Data
 nyc <- nyc[, c("Date", "measles")]
 
-colnames(nyc) <- c('Date','Cases')
-str(nyc)
+colnames(nyc) <- c('Date','Cases') # Renaming columns
 
 
 # Ensure the date column is in Date format
-nyc$Cases[is.na(nyc$Cases)] <- mean(nyc$Cases, na.rm = TRUE)
-str(nyc)
+nyc$Cases[is.na(nyc$Cases)] <- mean(nyc$Cases, na.rm = TRUE) # get rid of missing data by using the mean
+str(nyc) # confirm the type of data
 
-nyc$Cases<-sqrt(nyc$Cases)
+nyc$Cases<-sqrt(nyc$Cases) # take the square root of the data to clearly see what is happening
 
 
+# Function to plot the time series (with different colors for specific time ranges)
 timeplot <- function(data, x, y, ma = NULL, add = FALSE, time_ranges=NULL, colors = NULL,...) {
   # Check if the specified columns exist in the data frame
   if (!(x %in% colnames(data)) | !(y %in% colnames(data))) {
@@ -66,6 +67,7 @@ timeplot <- function(data, x, y, ma = NULL, add = FALSE, time_ranges=NULL, color
   }
 }
 
+# Function to plot periodogram
 periodogram <- function(df, # data frame: date and (weekly) cases
                         xlim=c(0,10), # max 10 year period by default
                         trange, # whole time series by default
@@ -88,26 +90,30 @@ periodogram <- function(df, # data frame: date and (weekly) cases
 
 #Multipanel plot for NYC Time Series Case
 
-times<-list(c('1890-10-11','1919-8-30'),
-            c('1919-9-6','1942-6-6'),
-            c('1942-6-13','1983-12-30'))
+times<-list(c('1890-10-11','1945-12-29'),
+            c('1946-1-5','1963-12-27'),
+            c('1964-1-3','1982-12-30'))
 
 colors<-c('hotpink','dodgerblue','seagreen2')
 
-par(mfrow = c(2, 2), mar = c(4, 4, 2, 1))
+par(mfrow = c(2, 2), mar = c(5, 5, 4, 2))
 timeplot(nyc, "Date", "Cases", ma = 6,time_ranges = times,
          colors = colors)
 title(main = "Time Series of Cases", xlab = "Date", 
       ylab = "Number of Cases")
+mtext('(a)',side=3,line=2,adj=0)
 
-periodogram(nyc,trange=times[[1]],xlim=c(0,5),color=colors[[1]])
-title(main = "Periodogram 1890-1919", xlab = "Years", 
+periodogram(nyc,trange=times[[1]],xlim=c(0,8),color=colors[[1]])
+title(main = "Periodogram 1890-1945", xlab = "Years", 
       ylab = "Power Spectrum")
+mtext('(b)',side=3,line=2,adj=0)
 
-periodogram(nyc,trange=times[[2]],xlim=c(0,5),color=colors[[2]])
-title(main = "Periodogram 1919-1942", xlab = "Years", 
+periodogram(nyc,trange=times[[2]],xlim=c(0,8),color=colors[[2]])
+title(main = "Periodogram 1946-1963", xlab = "Years", 
       ylab = "Power Spectrum")
+mtext('(c)',side=3,line=2,adj=0)
 
-periodogram(nyc,trange=times[[3]],xlim=c(0,5),color=colors[[3]])
-title(main = "Periodogram 1942-1983", xlab = "Years", 
+periodogram(nyc,trange=times[[3]],xlim=c(0,8),color=colors[[3]])
+title(main = "Periodogram 1964-1980", xlab = "Years", 
       ylab = "Power Spectrum")
+mtext('(d)',side=3,line=2,adj=0)
