@@ -122,3 +122,73 @@ for (i in seq_along(p_values)) {
   )
   title(main = paste("Periodogram with p =", p, "(Last 50 Years)"), line = 3)
 }
+
+
+
+
+##### SEE DRAMATIC CHANGES IN RANGE OF VALUES CLOSE TO 0.66 
+#### ( can adapt this for what we want and choose to analyze certain ones )
+## Define a finer grid of vaccination rates
+# Define a finer grid of vaccination rates
+p_values <- seq(0, 1, by = 0.01)
+# colors <- rainbow(length(p_values))
+
+# Initialize a data frame to store results
+results <- data.frame(p = numeric(), dominant_period = numeric())
+
+# Time sequence for the simulation
+times <- seq(0, 200, by = 1/52)
+
+# Open a PDF device to save the plots
+# pdf("/Users/sarah/Desktop/McMaster/Math4MB3/project/images/Changes in Vaccination Rates p = 0 to 1.pdf", width = 8, height = 4)
+
+# Loop over vaccination rates
+for (i in seq_along(p_values)) {
+  p <- p_values[i]
+  
+  # Update parameters
+  parms <- c(beta = beta, gamma = gamma, mu = mu, alpha = alpha, N = N, p = p)
+  
+  # Solve the ODE system
+  soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
+  
+  # Subset to the last 50 years
+  last_50_years <- soln[soln$time >= (max(times) - 50), ]
+  
+  # Periodogram analysis
+  s <- spectrum(last_50_years$I, plot = FALSE)
+  adjusted_freq <- 52 * s$freq
+  dominant_period <- 1 / adjusted_freq[which.max(s$spec)]
+  
+  # Store the result
+  results <- rbind(results, data.frame(p = p, dominant_period = dominant_period))
+  
+  # Set up side-by-side plots
+  par(mfrow = c(1, 2))
+  
+  # Plot the time series dynamics (left graph)
+  plot(
+    x = last_50_years$time, y = last_50_years$I, type = "l",
+    col = "red", lwd = 2, xlab = "Time (Years)", ylab = "Infectious I(t)",
+    main = paste("Dynamics for p =", round(p, 2))
+  )
+  
+  # Plot the periodogram (right graph)
+  plot(
+    1 / (52 * s$freq), s$spec, type = "l", col = "red", lwd = 2,
+    xlab = "Period (Years)", ylab = "Spectral Density",
+    xlim = c(0, 6),
+    main = paste("Periodogram for p =", round(p, 2))
+  )
+}
+
+par(mfrow = c(1, 1))
+# Visualize the dynamics
+plot(
+  results$p, results$dominant_period, type = "b", col = "blue", lwd = 2, pch = 20,
+  xlab = "Vaccination Rate (p)", ylab = "Dominant Period (Years)",
+  main = "Change in Dynamics with Vaccination Rate (Deterministic Model)"
+)
+
+# Close the PDF device
+# dev.off()
