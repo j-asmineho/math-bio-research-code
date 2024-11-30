@@ -9,7 +9,7 @@ gamma <- 365 / 13                 # Recovery rate (13-day infectious period)
 R0 <- 17                          # Basic reproduction number
 beta <- R0 * (gamma + mu)         # Transmission rate
 alpha <- 0.1                      # Seasonal forcing amplitude
-p <- NA                           # Placeholder for vaccination rate
+p <- 0.66                           # Placeholder for vaccination rate
 
 # Combine into a parameter vector
 parms <- c(
@@ -46,6 +46,7 @@ SIR.vector.field <- function(t, vars, parms) {
     list(c(dS, dI, dR))
   })
 }
+
 
 # Periodogram Function
 periodogram_d <- function(df, xlim = c(0, 10), color, ...) {
@@ -121,59 +122,3 @@ for (i in seq_along(p_values)) {
   )
   title(main = paste("Periodogram with p =", p, "(Last 50 Years)"), line = 3)
 }
-
-
-
-
-##### SEE DRAMATIC CHANGES IN RANGE OF VALUES CLOSE TO 0.66 
-#### ( can adapt this for what we want and choose to analyze certain ones )
-## Define a finer grid of vaccination rates
-p_values <- seq(0.55, 0.7, by = 0.01)
-colors <- rainbow(length(p_values))
-
-# Initialize a data frame to store results
-results <- data.frame(p = numeric(), dominant_period = numeric())
-
-# Time sequence for the simulation
-times <- seq(0, 100, by = 1/52)
-
-# Loop over vaccination rates
-for (i in seq_along(p_values)) {
-  p <- p_values[i]
-  
-  # Update parameters
-  parms <- c(beta = beta, gamma = gamma, mu = mu, alpha = alpha, N = N, p = p)
-  
-  # Solve the ODE system
-  soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
-  
-  # Subset to the last 50 years
-  last_50_years <- soln[soln$time >= (max(times) - 50), ]
-  
-  # Periodogram analysis
-  s <- spectrum(last_50_years$I, plot = FALSE)
-  adjusted_freq <- 52 * s$freq
-  dominant_period <- 1 / adjusted_freq[which.max(s$spec)]
-  
-  # Store the result
-  results <- rbind(results, data.frame(p = p, dominant_period = dominant_period))
-  
-  # Plot the time series (optional)
-  plot(
-    x = last_50_years$time, y = last_50_years$I, log = "y", type = "l",
-    col = colors[i], lwd = 2, xlab = "Time (Years)", ylab = "Infectious I(t)",
-    main = paste("Vaccination Rate p =", round(p, 2))
-  )
-  
-  # Plot the periodogram (optional)
-  plot(
-    1 / (52 * s$freq), s$spec, type = "l", col = colors[i], lwd = 2,
-    xlab = "Period (Years)", ylab = "Spectral Density",
-    main = paste("Periodogram for p =", round(p, 2))
-  )
-}
-
-# Visualize the dynamics
-plot(results$p, results$dominant_period, type = "b", col = "blue", lwd = 2,
-     xlab = "Vaccination Rate (p)", ylab = "Dominant Period (Years)",
-     main = "Change in Dynamics with Vaccination Rate")
