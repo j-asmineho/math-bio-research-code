@@ -1,4 +1,7 @@
 
+## Total run time: ~ 5.5 hours (can reduce run time in stochastic model below by selecting less vaccination rates (p))
+
+
 ##### Allow to settle after times 1000, then plot only for the last 50 years
 library(deSolve)
 
@@ -9,7 +12,7 @@ gamma <- 365 / 13                 # Recovery rate (13-day infectious period)
 R0 <- 17                          # Basic reproduction number
 beta <- R0 * (gamma + mu)         # Transmission rate
 alpha <- 0.1                      # Seasonal forcing amplitude
-p <- 0.66                           # Placeholder for vaccination rate
+p <- 0                           # Placeholder for vaccination rate
 
 # Combine into a parameter vector
 parms <- c(
@@ -20,10 +23,6 @@ parms <- c(
   N = N,
   p = p
 )
-
-# Number of simulations for Gillespie simulation
-nsim <- 5
-tmax <- 50
 
 # Equilibrium
 Seqm <- (with(as.list(parms), N / R0))
@@ -51,8 +50,9 @@ SIR.vector.field <- function(t, vars, parms) {
   })
 }
 
+
 # Periodogram Function
-periodogram_d <- function(df, xlim = c(0, 10), color, ...) {
+periodogram <- function(df, xlim = c(0, 10), color, ...) {
   with(df, {
     s <- spectrum(I, plot = FALSE)
     adjusted_freq <- 52 * s$freq  # Convert from weeks to years
@@ -118,7 +118,7 @@ for (i in seq_along(p_values)) {
   
   
   # Plot the periodogram for the last 50 years
-  periodogram_d(
+  periodogram(
     last_50_years, 
     xlim = c(0, 10), 
     color = colors[i]
@@ -132,14 +132,18 @@ for (i in seq_along(p_values)) {
 ##### SEE DRAMATIC CHANGES IN RANGE OF VALUES CLOSE TO 0.66 
 #### ( can adapt this for what we want and choose to analyze certain ones )
 ## Define a finer grid of vaccination rates
-p_values <- seq(0.55, 0.7, by = 0.01)
-colors <- rainbow(length(p_values))
+# Define a finer grid of vaccination rates
+p_values <- seq(0, 1, by = 0.01)
+# colors <- rainbow(length(p_values))
 
 # Initialize a data frame to store results
 results <- data.frame(p = numeric(), dominant_period = numeric())
 
 # Time sequence for the simulation
 times <- seq(0, 200, by = 1/52)
+
+# Open a PDF device to save the plots
+# pdf("/Users/sarah/Desktop/McMaster/Math4MB3/project/images/Changes in Vaccination Rates p = 0 to 1.pdf", width = 8, height = 4)
 
 # Loop over vaccination rates
 for (i in seq_along(p_values)) {
@@ -162,30 +166,42 @@ for (i in seq_along(p_values)) {
   # Store the result
   results <- rbind(results, data.frame(p = p, dominant_period = dominant_period))
   
-  # Plot the time series (optional)
+  # Set up side-by-side plots
+  par(mfrow = c(1, 2))
+  
+  # Plot the time series dynamics (left graph)
   plot(
-    x = last_50_years$time, y = last_50_years$I, log = "y", type = "l",
-    col = colors[i], lwd = 2, xlab = "Time (Years)", ylab = "Infectious I(t)",
-    main = paste("Vaccination Rate p =", round(p, 2))
+    x = last_50_years$time, y = last_50_years$I, type = "l",
+    col = "red", lwd = 2, xlab = "Time (Years)", ylab = "Infectious I(t)",
+    main = paste("Dynamics for p =", round(p, 2))
   )
   
-  # Plot the periodogram (optional)
+  # Plot the periodogram (right graph)
   plot(
-    1 / (52 * s$freq), s$spec, type = "l", col = colors[i], lwd = 2,
+    1 / (52 * s$freq), s$spec, type = "l", col = "red", lwd = 2,
     xlab = "Period (Years)", ylab = "Spectral Density",
+    xlim = c(0, 6),
     main = paste("Periodogram for p =", round(p, 2))
   )
 }
 
+par(mfrow = c(1, 1))
 # Visualize the dynamics
-plot(results$p, results$dominant_period, type = "b", col = "blue", lwd = 2,
-     xlab = "Vaccination Rate (p)", ylab = "Dominant Period (Years)",
-     main = "Change in Dynamics with Vaccination Rate")
+plot(
+  results$p, results$dominant_period, type = "b", col = "blue", lwd = 2, pch = 20,
+  xlab = "Vaccination Rate (p)", ylab = "Dominant Period (Years)",
+  main = "Change in Dynamics with Vaccination Rate (Deterministic Model)"
+)
+
+# Close the PDF device
+# dev.off()
 
 
 
 
-# Stochastic model, start at end values from deterministic model once settled
+
+# Stochastic model, start at end values from deterministic model once settled 
+### 15.5 minutes
 # reset parms
 p <- 0.66
 
@@ -205,7 +221,10 @@ soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms 
 final_state <- tail(soln, 1)
 ic_stochastic <- c(S = round(final_state$S), I = round(final_state$I), R = round(final_state$R))
 
-tmax <- 200
+# Number of simulations for Gillespie simulation
+nsim <- 5
+tmax <- 100
+
 
 SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1) {
   start.time <- proc.time()
@@ -215,7 +234,7 @@ SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1) {
   mu = parms['mu']
   gamma = parms['gamma']
   N=parms['N']
-  p=parms['p']
+  p=as.numeric(parms['p'])
   
   # Begin closer to eqm points
   S <- ic['S'] 
@@ -322,34 +341,38 @@ SIR.Gillespie <- function(parms, ic, tmax, dtsave = 1/52, yearstep = 1) {
 # Takes approximately 10 minutes to run with N = 500,000 and tmax = 50
 
 par(mfrow = c(1, 1))
-
 plot_multiple_gillespie_lines <- function(parms, ic, tmax, nsim) {
   start.time <- proc.time()
   
+  p <- as.numeric(parms['p'])
+  
   # Run multiple simulations and print simulation complete to track progress
   result_list <- lapply(1:nsim, function(x) {
+    set.seed(x)  # Set a unique seed for each simulation based on its index
     res <- SIR.Gillespie(parms = parms, ic = ic_stochastic, tmax = tmax)
-    message(sprintf("Simulation %d completed", x))
+    message(sprintf("Simulation %d completed for p = %.2f", x, p))
     return(res)
   })
   
+  
   last_50_start_time <- tmax - 50
-  
+    
   last_50_deterministic <- soln[soln$time >= last_50_start_time, ]
-  
-  # Determine plot y limits based on all simulations
+    
+    # Determine plot y limits based on all simulations
   y_range <- range(c(
-    sapply(result_list, function(res) res$I),
-    last_50_deterministic$I
-  ), na.rm = TRUE)
-  
-  
-  # Create base plot
+      sapply(result_list, function(res) res$I),
+      last_50_deterministic$I
+    ), na.rm = TRUE)
+    
+    # Create base plot
   plot(NULL, xlim = c(tmax-50, tmax), ylim = y_range,
        xlab = "Time (years)", ylab = "Infectious I(t)", 
-       main = "Stochastic and Deterministic Models (last 50 years)")
+       main = paste("Stochastic and Deterministic Models (last 50 years)\n", "Vaccination Rate (p) = ", p))
   
   colors <- rainbow(nsim)
+  
+  simulation_data <- data.frame(simulation = integer(0), time = numeric(0), I = numeric(0))
   
   for (i in 1:nsim) {
     # Subset the stochastic simulation to the last 50 years
@@ -357,9 +380,14 @@ plot_multiple_gillespie_lines <- function(parms, ic, tmax, nsim) {
     
     # Plot the filtered stochastic results
     lines(last_50_stochastic$time, last_50_stochastic$I, col = colors[i], lwd = 1.5)
+    
+    simulation_data <- rbind(simulation_data, 
+                             data.frame(simulation = rep(i, nrow(last_50_stochastic)), 
+                                        time = last_50_stochastic$time, 
+                                        I = last_50_stochastic$I))
   }
-  
-  
+    
+    
   # plot deterministic model (if available)
   lines(x = last_50_deterministic[, "time"], y = last_50_deterministic[, "I"], col = "black", lwd = 2)
   
@@ -368,35 +396,87 @@ plot_multiple_gillespie_lines <- function(parms, ic, tmax, nsim) {
          col = colors, lty = 1, bty = "n", cex = 0.7, lwd = 1.5)
   
   # Calculate and plot the periodogram for each simulation
-  par(mfrow = c(ceiling(nsim / 2), 2))  # Arrange plots in a grid
+  par(mfrow = c(3, 2))  # Arrange plots in a grid (5 stochastic + 1 deterministic)
   
+  # Loop through the simulations
   for (i in 1:nsim) {
-    v <- last_50_stochastic$I # Use the 'I' time series from each simulation
+    # Subset the data for the current simulation (simulation 'i')
+    sim_data <- subset(simulation_data, simulation == i)
+    
+    # Extract the 'I' values from the simulation data
+    v <- sim_data$I
     
     # Calculate the periodogram using the 'spectrum' function
     s <- spectrum(v, plot = FALSE)
     
-    # Adjust the frequency to be in terms of years (optional)
-    adjusted_freq <- s$freq * 52  # if data is weekly, convert to yearly frequencies
+    # Adjust the frequency to be in terms of years (optional, based on the frequency of your data)
+    adjusted_freq <- s$freq * 52  # If data is weekly, convert to yearly frequencies
     
     # Create the periodogram plot for the current simulation
-    plot(1 / adjusted_freq, s$spec, type = "l", col = colors[i], xlim = c(0, 5),
-         xlab = "Years", ylab = "Periodogram",
+    plot(1 / adjusted_freq, s$spec, type = "l", col = colors[i],
+         xlim = c(0, 5), xlab = "Years", ylab = "Periodogram",
          main = sprintf("Periodogram of Simulation %d", i))
   }
   
+  # Deterministic periodogram (bottom right)
+  deterministic_s <- spectrum(last_50_deterministic$I, plot = FALSE)
+  adjusted_freq_d <- deterministic_s$freq * 52  # Convert to yearly frequencies
+  plot(1 / adjusted_freq_d, deterministic_s$spec, type = "l", col = "black",
+       xlim = c(0, 5), xlab = "Years", ylab = "Periodogram",
+       main = sprintf("Deterministic Periodogram for p = %.2f", p))
+
+
   par(mfrow = c(1, 1))  # Reset plot layout to single panel
   
   end.time <- proc.time() - start.time
   message("total run time: ")
   print(end.time)
+  
 }
 
+
+
 # Run the function to plot the stochastic simulations and periodogram
+### Can run to see for p = 0.66 (annual cycles)
 plot_multiple_gillespie_lines(parms = parms, ic = ic, tmax = tmax, nsim = nsim)
 
+# Define a sequence of p values
+p_values <- c(0.1, 0.11, 0.35, 0.36, 0.45, 0.46, 0.57, 0.58, 0.6, 0.61, 0.67, 0.68, 0.69, 0.72, 0.73, 0.74, 0.87, 0.91, 0.93)  # Adjust the step size for desired resolution
+
+# Time sequence for the simulation
+times <- seq(0, 100, by = 1/52)
 
 
+#### NOTE: takes about 5.5 hours to load, can decrease number of p_values for less run time
 
+start.time <- proc.time()
 
-
+# Loop over p values
+for (p in p_values) {
+  # Update the parameters for the current p value
+  parms <- c(
+    beta = beta,
+    gamma = gamma,
+    mu = mu,
+    alpha = alpha,
+    N = N,
+    p = p
+  )
+  
+  soln <- as.data.frame(ode(y = ic, times = times, func = SIR.vector.field, parms = parms))
+  
+  # set initial value of stochastic model to final value from deterministic model
+  final_state <- tail(soln, 1)
+  ic_stochastic <- c(S = round(final_state$S), I = round(final_state$I), R = round(final_state$R))
+  
+  # Save the output to a PDF for each p value
+  pdf(file = paste0("/Users/sarah/Desktop/McMaster/Math4MB3/project/images/stochasticsim_vaccinationrate_", formatC(p, digits = 2, format = "f"), ".pdf"))
+  
+  # Run the function
+  plot_multiple_gillespie_lines(parms = parms, ic = ic, tmax = tmax, nsim = nsim)
+  
+  dev.off()  # Close the PDF device
+}
+end.time <- proc.time() - start.time
+message("total run time: ")
+print(end.time)
