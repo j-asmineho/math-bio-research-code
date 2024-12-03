@@ -8,6 +8,7 @@ To begin, please ensure that you do not move around the contents of the folder. 
 To compile the paper
 1. Ensure that the Images folder has been downloaded and is located in the same place as Math_4MB3_Acute_Triangle_Paper.tex
 2. Press "Typset" in LaTex or run the following commands:
+
      render pdflatex Math_4MB3_Acute_Triangle_Paper.tex
 
 To compile the knitr Supplement
@@ -23,7 +24,8 @@ To compile the knitr Supplement
 4.If you pressed the button, the PDF should be open in your default viewer. If you ran the commands, open the resulting .tex file with your preferred LaTeX program and compile the PDF.
 
 Presentation
-1. Either press "Typeset" button in LaTex or run the commands
+1. Either press "Typeset" button in LaTex or run the command:
+
      render pdflatex Math_4MB3_Acute_Triangle_Paper.tex
 
 To count the total words in the document, run the command `texcount Math_4MB3_Acute_Triangle_Paper.tex` to output a word count.
