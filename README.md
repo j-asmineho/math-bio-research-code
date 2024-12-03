@@ -9,15 +9,15 @@ To compile the any of
 
 1.
 Make sure knitr is your default program to weave Rnw files
-(see RStudio > Preferences > Sweave, also select the option ‘pdflatex’ in ‘Typeset LaTeX into PDF using:’)
+(see RStudio > Preferences > Sweave, also select the option \pdflatex’ in ‘Typeset LaTeX into PDF using:’)
 
 2. 
-Open main.Rnw in RStudio
+Open `filename.Rnw` in RStudio
 
 3. 
 Either press the button “compile PDF” or run the commands:
 	library(knitr)
-	knit(“main.Rnw”)
+	knit(“`filename.Rnw`”)
 
 6.
 If you pressed the button, the PDF should be open in your default viewer. If you ran the commands, open the resulting .tex file with your preferred LaTeX program and compile the PDF.
